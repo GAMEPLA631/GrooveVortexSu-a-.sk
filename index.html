@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrooveVortex Súťaže</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .vortex-bg {
+            background: radial-gradient(circle at top right, #1e3a8a 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, #581c87 0%, transparent 40%);
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px #8b5cf6;
+        }
+
+        .hidden { display: none; }
+        
+        #qrcode img {
+            margin: 0 auto;
+            border: 8px solid white;
+            border-radius: 8px;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="vortex-bg min-h-screen">
+
+    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto">
+        <div class="text-2xl font-extrabold tracking-tighter flex items-center gap-2">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i class="fas fa-vortex text-white"></i>
+            </div>
+            <span>Groove<span class="text-blue-500">Vortex</span></span>
+        </div>
+        <div id="status-badge" class="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-800 border border-slate-700">
+            Načítavam...
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-6 mt-4 md:mt-10">
+        <!-- Hero Section -->
+        <section id="hero" class="text-center space-y-8 animate-fade-in">
+            <div class="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-semibold">
+                Letná sezóna je tu! 🥤
+            </div>
+            <h1 class="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
+                Získaj svoju <br>
+                <span class="gradient-text text-6xl md:text-8xl">Pepsi Výhru</span>
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                Zapoj sa do unikátnej súťaže ovládanej umelou inteligenciou. Otestuj sa, získaj známku A a vyhraj. Pozor, prijímame len 5 ľudí každé 2 týždne!
+            </p>
+            
+            <div id="reg-status-info" class="p-5 rounded-2xl glass border-white/5 inline-block">
+                <!-- Dynamically filled -->
+            </div>
+
+            <div id="action-area" class="flex flex-col items-center gap-4">
+                <button onclick="startRegistration()" id="start-btn" class="btn-primary px-10 py-5 rounded-2xl font-bold text-xl shadow-xl shadow-blue-600/20">
+                    Spustiť registráciu
+                </button>
+                <p class="text-slate-500 text-xs uppercase tracking-widest font-bold">Koniec súťaže: 1. Septembra</p>
+            </div>
+
+            <div id="closed-message" class="hidden p-8 glass border-red-500/30 rounded-3xl text-red-400">
+                <i class="fas fa-calendar-times text-5xl mb-4 block text-red-500/50"></i>
+                <h3 class="text-2xl font-bold mb-2">Súťaž je momentálne uzavretá</h3>
+                <p class="text-slate-400">Aktuálna sezóna skončila 1. septembra. Nová súťaž o Pepsi štartuje opäť v Júli!</p>
+            </div>
+        </section>
+
+        <!-- Registration Form -->
+        <section id="registration" class="hidden glass p-8 md:p-12 rounded-[2.5rem] space-y-8 animate-fade-in shadow-2xl">
+            <div class="space-y-2">
+                <h2 class="text-3xl font-extrabold">Kto súťaží?</h2>
+                <p class="text-slate-400">Tieto údaje použijeme na zaslanie tvojho certifikátu.</p>
+            </div>
+            <form id="reg-form" class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Tvoje meno</label>
+                        <input type="text" id="name" placeholder="Napr. Lukáš" required class="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-600">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">E-mailová adresa</label>
+                        <input type="email" id="email" placeholder="tvoj@email.sk" required class="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-600">
+                    </div>
+                </div>
+                <button type="submit" class="w-full btn-primary py-5 rounded-2xl font-extrabold text-lg">
+                    Vstúpiť do AI Kvízu <i class="fas fa-chevron-right ml-2 text-sm opacity-50"></i>
+                </button>
+            </form>
+        </section>
+
+        <!-- Quiz Section -->
+        <section id="quiz" class="hidden glass p-8 md:p-12 rounded-[2.5rem] space-y-8 animate-fade-in">
+            <div class="flex justify-between items-center bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <h2 class="text-lg font-bold">Generovaný AI Kvíz</h2>
+                </div>
+                <div id="quiz-progress" class="text-blue-400 font-mono font-bold px-3 py-1 bg-blue-400/10 rounded-lg">Otázka 1 / 10</div>
+            </div>
+            <div id="quiz-container" class="min-h-[300px] flex flex-col justify-center">
+                <div id="ai-loading" class="text-center py-10 space-y-6">
+                    <div class="relative w-20 h-20 mx-auto">
+                        <div class="absolute inset-0 border-4 border-blue-500/20 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <i class="fas fa-brain absolute inset-0 flex items-center justify-center text-blue-400 text-2xl"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="font-bold text-xl">Umelá inteligencia tvorí tvoj kvíz...</p>
+                        <p class="text-slate-500 text-sm">Hľadáme tie najlepšie letné otázky práve pre teba.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results" class="hidden glass p-10 rounded-[2.5rem] text-center space-y-10 animate-fade-in shadow-2xl border-t border-white/10">
+            <div id="result-icon-container" class="relative inline-block">
+                <div id="result-icon" class="text-8xl relative z-10"></div>
+                <div class="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
+            </div>
+            
+            <div class="space-y-2">
+                <h2 id="result-title" class="text-5xl font-black tracking-tight"></h2>
+                <p id="result-subtitle" class="text-slate-400"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 max-w-sm mx-auto">
+                <div class="p-6 bg-slate-800/50 rounded-3xl border border-white/5">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Úspešnosť</p>
+                    <p id="result-percent" class="text-4xl font-black text-blue-400"></p>
+                </div>
+                <div class="p-6 bg-slate-800/50 rounded-3xl border border-white/5">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Známka</p>
+                    <p id="result-grade" class="text-4xl font-black text-purple-400"></p>
+                </div>
+            </div>
+            
+            <p id="result-text" class="text-slate-300 text-lg max-w-md mx-auto leading-relaxed"></p>
+            
+            <div id="win-area" class="hidden space-y-8 p-8 bg-white/5 rounded-3xl border border-green-500/20">
+                <div class="space-y-2">
+                    <p class="text-green-400 font-bold text-xl">GRATULUJEME K VÝHRE! 🎉</p>
+                    <p class="text-slate-400 text-sm">Tento unikátny QR kód je tvojím dokladom.</p>
+                </div>
+                <div id="qrcode" class="p-4 bg-white rounded-2xl inline-block shadow-2xl"></div>
+                <div class="text-xs text-slate-500 max-w-xs mx-auto">
+                    Naskenuj tento kód a ulož si ho do mobilu. Platí pre uplatnenie malej alebo veľkej Pepsi podľa tvojho skóre.
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button onclick="window.location.reload()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-8 py-3 rounded-xl transition-all font-bold">Zavrieť a domov</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // API Key handling - set to empty string, environment injects it.
+        const apiKey = ""; 
+        const FORM_ENDPOINT = "https://forminit.com/f/bvrmwxdb";
+        let db;
+        let currentQuiz = [];
+        let userAnswers = [];
+        let currentQuestionIndex = 0;
+        let userData = {};
+
+        // --- Database & Logic ---
+
+        async function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("GrooveVortex_V3", 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    db.createObjectStore("system", { keyPath: "id" });
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve();
+                };
+                request.onerror = () => reject("DB Error");
+            });
+        }
+
+        async function getSystemState() {
+            const tx = db.transaction("system", "readonly");
+            const store = tx.objectStore("system");
+            return new Promise(res => {
+                const req = store.get("config");
+                req.onsuccess = () => res(req.result || {
+                    id: "config",
+                    lastResetYear: 0,
+                    regCount: 0,
+                    lastRegPeriodStart: Date.now()
+                });
+            });
+        }
+
+        async function saveSystemState(state) {
+            const tx = db.transaction("system", "readwrite");
+            tx.objectStore("system").put(state);
+        }
+
+        async function checkStatus() {
+            const state = await getSystemState();
+            const now = new Date();
+            const year = now.getFullYear();
+            
+            // Logika resetu v Júli
+            if (now.getMonth() >= 6 && state.lastResetYear < year) {
+                state.lastResetYear = year;
+                state.regCount = 0;
+                state.lastRegPeriodStart = Date.now();
+                await saveSystemState(state);
+            }
+
+            // Podmienka uzatvorenia: Pred Júlom ALEBO po 1. Septembri
+            const isBeforeJuly = now.getMonth() < 6;
+            const isAfterAugust = now.getMonth() >= 8 && now.getDate() >= 1 || now.getMonth() > 8;
+            
+            if (isBeforeJuly || isAfterAugust) {
+                document.getElementById('start-btn').classList.add('hidden');
+                document.getElementById('reg-status-info').classList.add('hidden');
+                document.getElementById('closed-message').classList.remove('hidden');
+                document.getElementById('status-badge').innerText = "Sezóna ukončená";
+                document.getElementById('status-badge').classList.add('text-red-400');
+            } else {
+                document.getElementById('status-badge').innerText = `Sezóna ${year} prebieha`;
+                document.getElementById('status-badge').classList.add('text-green-400');
+                updateRegDisplay(state);
+            }
+        }
+
+        function updateRegDisplay(state) {
+            const now = Date.now();
+            const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+            
+            if (now - state.lastRegPeriodStart > twoWeeksMs) {
+                state.regCount = 0;
+                state.lastRegPeriodStart = now;
+                saveSystemState(state);
+            }
+
+            const remaining = 5 - state.regCount;
+            const info = document.getElementById('reg-status-info');
+            
+            info.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="relative flex items-center justify-center">
+                        <div class="absolute inset-0 bg-${remaining > 0 ? 'green' : 'red'}-500 blur-md opacity-20"></div>
+                        <i class="fas fa-users text-${remaining > 0 ? 'green' : 'red'}-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs font-bold uppercase text-slate-500 tracking-tighter">Voľné miesta</p>
+                        <p class="text-xl font-black">${remaining} <span class="text-slate-600 text-sm">/ 5 v tomto cykle</span></p>
+                    </div>
+                </div>
+            `;
+            
+            if (remaining <= 0) {
+                const btn = document.getElementById('start-btn');
+                btn.disabled = true;
+                btn.innerText = "Kapacita naplnená";
+                btn.classList.add('opacity-40', 'grayscale');
+            }
+        }
+
+        // --- AI Integration ---
+
+        async function fetchAIQuiz(retries = 5, delay = 1000) {
+            const systemPrompt = "Si generátor zdravých a zábavných letných kvízov pre mládež. Zameraj sa na Pepsi, letné prázdniny a pitný režim.";
+            const userQuery = `Vytvor 10 otázok v slovenčine o Pepsi a letnej pohode. 
+            Musí to byť validný JSON: pole objektov s kľúčmi "q" (otázka), "o" (pole 4 možností), "a" (index správnej odpovede 0-3).`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                if (!response.ok) throw new Error("API Limit");
+                
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                return JSON.parse(text);
+            } catch (err) {
+                if (retries > 0) {
+                    await new Promise(r => setTimeout(r, delay));
+                    return fetchAIQuiz(retries - 1, delay * 2);
+                }
+                // Núdzový kvíz ak AI zlyhá po retries
+                return Array(10).fill({
+                    q: "Ktorý nápoj je spojený s letnou pohodou a modrým logom?",
+                    o: ["Coca-Cola", "Pepsi", "Kofola", "Voda"],
+                    a: 1
+                });
+            }
+        }
+
+        // --- App Flow ---
+
+        function startRegistration() {
+            document.getElementById('hero').classList.add('hidden');
+            document.getElementById('registration').classList.remove('hidden');
+        }
+
+        document.getElementById('reg-form').onsubmit = async (e) => {
+            e.preventDefault();
+            userData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                startAt: new Date().toISOString()
+            };
+
+            const state = await getSystemState();
+            state.regCount++;
+            await saveSystemState(state);
+
+            document.getElementById('registration').classList.add('hidden');
+            document.getElementById('quiz').classList.remove('hidden');
+            
+            currentQuiz = await fetchAIQuiz();
+            renderQuestion();
+        };
+
+        function renderQuestion() {
+            document.getElementById('ai-loading').classList.add('hidden');
+            const q = currentQuiz[currentQuestionIndex];
+            const container = document.getElementById('quiz-container');
+            document.getElementById('quiz-progress').innerText = `Otázka ${currentQuestionIndex + 1} / 10`;
+
+            container.innerHTML = `
+                <div class="space-y-6 animate-fade-in">
+                    <h3 class="text-2xl font-extrabold text-white leading-snug">${q.q}</h3>
+                    <div class="grid gap-4">
+                        ${q.o.map((opt, i) => `
+                            <button onclick="handleAnswer(${i})" class="group flex items-center w-full text-left p-5 rounded-2xl border border-slate-700/50 hover:border-blue-500 hover:bg-blue-500/10 transition-all duration-300">
+                                <span class="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-800 group-hover:bg-blue-600 text-center leading-10 font-black text-sm mr-4 transition-colors">
+                                    ${String.fromCharCode(65+i)}
+                                </span>
+                                <span class="font-semibold text-slate-300 group-hover:text-white">${opt}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleAnswer(idx) {
+            userAnswers.push(idx);
+            if (currentQuestionIndex < 9) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                processResults();
+            }
+        }
+
+        async function processResults() {
+            let score = 0;
+            currentQuiz.forEach((q, i) => { if(q.a === userAnswers[i]) score++; });
+            
+            const percent = (score / 10) * 100;
+            let grade = 'F';
+            let status = 'Prehral si';
+            
+            if (percent === 100) { grade = 'A'; status = 'VÍŤAZ'; }
+            else if (percent >= 86) { grade = 'B'; status = 'STREDNÝ VÍŤAZ'; }
+            else if (percent >= 50) { grade = 'C'; status = 'DOBRÁ SNAHA'; }
+
+            // Odoslanie dát
+            try {
+                await fetch(FORM_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user: userData,
+                        results: { score: percent + "%", grade: grade, status: status }
+                    })
+                });
+            } catch (e) {}
+
+            displayResults(percent, grade, status);
+        }
+
+        function displayResults(percent, grade, status) {
+            document.getElementById('quiz').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+
+            const title = document.getElementById('result-title');
+            const subtitle = document.getElementById('result-subtitle');
+            const icon = document.getElementById('result-icon');
+            const text = document.getElementById('result-text');
+            
+            document.getElementById('result-percent').innerText = percent + "%";
+            document.getElementById('result-grade').innerText = grade;
+
+            if (grade === 'A') {
+                icon.innerHTML = '🥇';
+                title.innerText = "Absolútna Elita!";
+                subtitle.innerText = "Tvoje skóre je perfektné";
+                text.innerText = "Wow! Máš 100% úspešnosť. Práve si vyhral veľkú Pepsi a titul letného kráľa GrooveVortex!";
+                document.getElementById('win-area').classList.remove('hidden');
+                new QRCode(document.getElementById("qrcode"), { text: `GV-A-${userData.email}-${Date.now()}`, width: 160, height: 160 });
+            } else if (grade === 'B') {
+                icon.innerHTML = '🥤';
+                title.innerText = "Skvelý Výkon!";
+                subtitle.innerText = "Chýbal ti len kúsok";
+                text.innerText = "Dosiahol si krásnych 86%. Získavaš malú Pepsi ako osvieženie počas horúčav!";
+                document.getElementById('win-area').classList.remove('hidden');
+                new QRCode(document.getElementById("qrcode"), { text: `GV-B-${userData.email}-${Date.now()}`, width: 160, height: 160 });
+            } else {
+                icon.innerHTML = '🏜️';
+                title.innerText = "Skús to o rok";
+                subtitle.innerText = "Žiadna výhra tento raz";
+                text.innerText = "Bohužiaľ, na výhru potrebuješ aspoň 86%. Nezúfaj, AI ti o rok pripraví nové otázky!";
+            }
+        }
+
+        window.onload = async () => {
+            await initDB();
+            await checkStatus();
+        };
+
+    </script>
+</body>
+</html>
